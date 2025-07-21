@@ -2224,7 +2224,7 @@ KEY_DISP_SEC_TYPE = 'Section Type'
 VALUES_SEC_PROFILE = ['Beams and Columns', 'RHS and SHS', 'CHS'] #,'Channels', 'Back to Back Channels'
 VALUES_SEC_PROFILE_2 = ['Angles', 'Back to Back Angles', 'Star Angles', 'Channels', 'Back to Back Channels']
 #, 'Channels', 'Back to Back Channels'
-VALUES_SEC_PROFILE3 = ['Beams and Columns'] #,'Channels', 'Back to Back Channels'
+VALUES_SEC_PROFILE3 = ['Columns','Channels', 'Back to Back Channels']
 KEY_LENZZ = 'Member.Length_zz'
 KEY_DISP_LENZZ = 'Length (z-z)(mm)*'
 
