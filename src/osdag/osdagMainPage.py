@@ -162,6 +162,7 @@ from .design_type.connection.column_end_plate import ColumnEndPlate
 from .design_type.compression_member import Column
 from .design_type.compression_member.compression import Compression
 from .design_type.compression_member.Column import ColumnDesign
+from .design_type.compression_member.laced_column import LacedColumn
 #from .design_type.beam_column.Beam_Colum_Compression import ColumnDesign
 
 from .design_type.flexural_member.flexure import Flexure
@@ -307,6 +308,7 @@ class OsdagMainWindow(QMainWindow):
                 'Compression Member': [#('Axially Loaded Columns', str(files("osdag.data.ResourceFiles.images").joinpath("CompressionMembers_ColumnsInFrames")), 'Column_Design'),
                                        # ('Beam-Column Design', str(files("osdag.data.ResourceFiles.images").joinpath("BC_CF-BW-Flush.png")), 'Beam_Column_Design'),
                                        ('Struts in Trusses', str(files("osdag.data.ResourceFiles.images").joinpath("strut.jpg")), 'Strut_Design'),
+                                       ('Laced Columns', str(files("osdag.data.ResourceFiles.images").joinpath("laced_column.png")), 'Laced_Column_Design'),
                                        self.show_compression_module,
                                        ],
                 'Flexural Member' : [
@@ -685,6 +687,14 @@ class OsdagMainWindow(QMainWindow):
         if strut_design_button is not None and strut_design_button.isChecked():
             self.hide()
             self.ui2 = Ui_ModuleWindow(Compression, ' ')
+            self.ui2.show()
+            self.ui2.closed.connect(self.show)
+            return
+        
+        laced_column_design_button = self.findChild(QRadioButton, 'Laced_Column_Design')
+        if laced_column_design_button is not None and laced_column_design_button.isChecked():
+            self.hide()
+            self.ui2 = Ui_ModuleWindow(LacedColumn, ' ')
             self.ui2.show()
             self.ui2.closed.connect(self.show)
             return
