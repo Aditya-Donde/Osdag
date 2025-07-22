@@ -51,8 +51,8 @@ class LacedColumn(Member):
         t1 = (KEY_DISP_COLSEC, TYPE_TAB_1, self.tab_section)
         tabs.append(t1)
 
-        # t2 = (DISP_TITLE_CHANNEL, TYPE_TAB_1, self.tab_channel_section)
-        # tabs.append(t2)
+        t2 = (DISP_TITLE_CHANNEL, TYPE_TAB_1, self.tab_channel_section)
+        tabs.append(t2)
         
         t2 = ("Optimization", TYPE_TAB_2, self.optimization_tab_column_design)
         tabs.append(t2)
@@ -101,22 +101,22 @@ class LacedColumn(Member):
         t6 = (KEY_DISP_COLSEC, [KEY_SECSIZE], [KEY_SOURCE], TYPE_TEXTBOX, self.change_source)
         change_tab.append(t6)
 
-        # t3 = (DISP_TITLE_CHANNEL, [KEY_SECSIZE, KEY_SEC_MATERIAL,'Label_0'],
-        #       [KEY_SECSIZE_SELECTED, KEY_SEC_FY, KEY_SEC_FU, 'Label_1', 'Label_2', 'Label_3', 'Label_13', 'Label_14',
-        #        'Label_4', 'Label_5',
-        #        'Label_9', 'Label_10', 'Label_11', 'Label_12', 'Label_15', 'Label_16', 'Label_17',
-        #        'Label_19', 'Label_20', 'Label_21',
-        #        'Label_22', 'Label_23', 'Label_26','Label_27', KEY_IMAGE], TYPE_TEXTBOX, self.get_new_channel_section_properties)
-        # change_tab.append(t3)
+        t3 = (DISP_TITLE_CHANNEL, [KEY_SECSIZE, KEY_SEC_MATERIAL,'Label_0'],
+              [KEY_SECSIZE_SELECTED, KEY_SEC_FY, KEY_SEC_FU, 'Label_1', 'Label_2', 'Label_3', 'Label_13', 'Label_14',
+               'Label_4', 'Label_5',
+               'Label_9', 'Label_10', 'Label_11', 'Label_12', 'Label_15', 'Label_16', 'Label_17',
+               'Label_19', 'Label_20', 'Label_21',
+                'Label_22', 'Label_23', 'Label_26','Label_27', KEY_IMAGE], TYPE_TEXTBOX, self.get_new_channel_section_properties)
+        change_tab.append(t3)
 
 
-        # t4 = (DISP_TITLE_CHANNEL, ['Label_1', 'Label_2', 'Label_3', 'Label_13','Label_14'],
-        #       ['Label_9', 'Label_10','Label_11', 'Label_12', 'Label_15', 'Label_16', 'Label_17','Label_19', 'Label_20', 'Label_21', 'Label_22','Label_26','Label_27', KEY_IMAGE], TYPE_TEXTBOX, self.get_Channel_sec_properties)
+        t4 = (DISP_TITLE_CHANNEL, ['Label_1', 'Label_2', 'Label_3', 'Label_13','Label_14'],
+              ['Label_9', 'Label_10','Label_11', 'Label_12', 'Label_15', 'Label_16', 'Label_17','Label_19', 'Label_20', 'Label_21', 'Label_22','Label_26','Label_27', KEY_IMAGE], TYPE_TEXTBOX, self.get_Channel_sec_properties)
 
-        # change_tab.append(t4)
+        change_tab.append(t4)
 
-        # t7 = (DISP_TITLE_CHANNEL, [KEY_SECSIZE_SELECTED], [KEY_SOURCE], TYPE_TEXTBOX, self.change_source)
-        # change_tab.append(t7)
+        t7 = (DISP_TITLE_CHANNEL, [KEY_SECSIZE_SELECTED], [KEY_SOURCE], TYPE_TEXTBOX, self.change_source)
+        change_tab.append(t7)
 
         return change_tab
 
@@ -141,8 +141,8 @@ class LacedColumn(Member):
         t1 = (KEY_DISP_COLSEC, TYPE_COMBOBOX, [KEY_SEC_MATERIAL])#Need to check
         design_input.append(t1)
 
-        # t2 = (DISP_TITLE_CHANNEL, TYPE_COMBOBOX, [KEY_SEC_MATERIAL])
-        # design_input.append(t2)
+        t2 = (DISP_TITLE_CHANNEL, TYPE_COMBOBOX, [KEY_SEC_MATERIAL])
+        design_input.append(t2)
 
         # t1 = (KEY_DISP_COLSEC, TYPE_TEXTBOX, [KEY_SEC_FU, KEY_SEC_FY, 'Label_21'])
         t1 = (KEY_DISP_COLSEC, TYPE_TEXTBOX, [KEY_SEC_FU, KEY_SEC_FY])
@@ -200,9 +200,9 @@ class LacedColumn(Member):
         t2 = (KEY_DISP_COLSEC, KEY_SECSIZE, TYPE_COMBOBOX, KEY_SECSIZE, None, None, "Columns")
         add_buttons.append(t2)
 
-        # t2 = (DISP_TITLE_CHANNEL, KEY_SECSIZE, TYPE_COMBOBOX_CUSTOMIZED, KEY_SECSIZE_SELECTED, KEY_SEC_PROFILE,
-        #       ['Channels', 'Back to Back Channels'], "Channels")
-        # add_buttons.append(t2)
+        t2 = (DISP_TITLE_CHANNEL, KEY_SECSIZE, TYPE_COMBOBOX_CUSTOMIZED, KEY_SECSIZE_SELECTED, KEY_SEC_PROFILE,
+              ['Channels', 'Back to Back Channels'], "Channels")
+        add_buttons.append(t2)
 
         return add_buttons
 
@@ -290,7 +290,7 @@ class LacedColumn(Member):
         t1 = (KEY_MODULE, KEY_DISP_COMPRESSION_COLUMN, TYPE_MODULE, None, True, 'No Validator')
         options_list.append(t1)
 
-        t2 = (KEY_SEC_PROFILE, KEY_DISP_SEC_PROFILE, TYPE_COMBOBOX, VALUES_SEC_PROFILE, True, 'No Validator')
+        t2 = (KEY_SEC_PROFILE, KEY_DISP_SEC_PROFILE, TYPE_COMBOBOX, VALUES_SEC_PROFILE3, True, 'No Validator')
         options_list.append(t2)
 
         t4 = (KEY_SECSIZE, KEY_DISP_SECSIZE, TYPE_COMBOBOX_CUSTOMIZED, ['All','Customized'], True, 'No Validator')
@@ -343,10 +343,8 @@ class LacedColumn(Member):
     def fn_profile_section(self):
 
         profile = self[0]
-        if profile == 'Beams and Columns':
-            res1 = connectdb("Beams", call_type="popup")
-            res2 = connectdb("Columns", call_type="popup")
-            return list(set(res1 + res2))
+        if profile == 'Columns':
+            return connectdb("Columns", call_type="popup")
         elif profile == 'RHS and SHS':
             res1 = connectdb("RHS", call_type="popup")
             res2 = connectdb("SHS", call_type="popup")
