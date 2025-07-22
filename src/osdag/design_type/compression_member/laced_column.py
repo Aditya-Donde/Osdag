@@ -664,7 +664,7 @@ class LacedColumn(Member):
 
         # section properties
         self.module = design_dictionary[KEY_MODULE]
-        self.mainmodule = 'Columns with known support conditions'
+        self.mainmodule = 'Laced Column Design'
         self.sec_profile = design_dictionary[KEY_SEC_PROFILE]
         self.sec_list = design_dictionary[KEY_SECSIZE]
         self.material = design_dictionary[KEY_SEC_MATERIAL]
@@ -739,6 +739,7 @@ class LacedColumn(Member):
         self.failed_design_dict = {}
         flag = self.section_classification(self)
         print(flag)
+        self.calculate_spacing(self)
         if flag:
             self.design_column(self)
             self.results(self)
@@ -1374,6 +1375,39 @@ class LacedColumn(Member):
             else:
                 select_section_img = "Parallel_Beam" """
     
+
+    def calculate_spacing(self):
+        """
+        Calculate the spacing S between the members of a compound column (channels).
+        Uses the properties of the final selected section.
+        Returns:
+            S: Spacing between two members (rounded up to nearest 10 for toe-to-toe)
+        """
+
+        root = (self.section_property.mom_inertia_z - self.section_property.mom_inertia_y) / self.section_property.area
+        if root < 0:
+            logger.error("Invalid input: (I_zz - I_yy) / A is negative.")
+            return None
+
+        if self.sec_profile == VALUES_SEC_PROFILE3[2]:  # Channel (back-to-back)
+            S = 2 * (math.sqrt(root) - self.section_property.Cy)
+        elif self.sec_profile == VALUES_SEC_PROFILE3[1]:  # Channel (toe-to-toe)
+            S = 2 * (math.sqrt(root) + self.section_property.Cy)
+            S = int(math.ceil(S / 10.0)) * 10
+        elif self.sec_profile == VALUES_SEC_PROFILE3[0]:  # Column
+            S = 2 * (math.sqrt(root) + (self.section_property.flange_thickness/2))
+            S = int(math.ceil(S / 10.0)) * 10
+        else:
+            logger.error("Unsupported section profile for spacing calculation.")
+            self.design_status = False
+            return None
+
+        if S < 0:
+            logger.error("Calculated spacing S is negative. Check your input values.")
+            self.design_status = False
+            return None
+        return S
+            
     def common_result(self, list_result, result_type):
         
         self.result_designation = list_result[result_type]['Designation']
