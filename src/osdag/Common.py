@@ -359,6 +359,7 @@ DISP_TITLE_CM = 'Connecting Members'
 
 # Compression Members
 KEY_DISP_COMPRESSION_COLUMN = 'Columns with known support conditions'
+KEY_DISP_COMPRESSION_LACEDCOLUMN = 'Laced Column Design'
 KEY_DISP_COMPRESSION_Strut = 'Struts in Trusses'
 KEY_SECTION_PROPERTY = 'Section Property'
 KEY_SECTION_DATA = 'Section Data'

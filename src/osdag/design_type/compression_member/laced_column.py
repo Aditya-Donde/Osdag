@@ -236,7 +236,7 @@ class LacedColumn(Member):
     # Setting up logger and Input and Output Docks
     ####################################
     def module_name(self):
-        return KEY_DISP_COMPRESSION_COLUMN
+        return KEY_DISP_COMPRESSION_LACEDCOLUMN
 
     def set_osdaglogger(key):
         """
@@ -281,13 +281,13 @@ class LacedColumn(Member):
         eg:[(None, 'Section Property', 'Title', None, True, 'No Validator'), ('Module', 'Pure Axial Column Design', 'Window Title', None, True, 'No Validator'), ('Member.Profile', 'Section Profile*', 'ComboBox', ['Beams', 'Columns', 'RHS', 'SHS', 'CHS', 'Angles', 'Back to Back Angles', 'Channels', 'Back to Back Channels'], True, 'No Validator'), ('Member.Designation', 'Section Size*', 'ComboBox_Customized', ['All', 'Customized'], True, 'No Validator'), ('Material', 'Material', 'ComboBox', ['E 165 (Fe 290)', 'E 250 (Fe 410 W)A', 'E 250 (Fe 410 W)B', 'E 250 (Fe 410 W)C', 'E 300 (Fe 440)', 'E 350 (Fe 490)', 'E 410 (Fe 540)', 'E 450 (Fe 570)D', 'E 450 (Fe 590) E', 'Cus_400_500_600_1400', 'Custom'], True, 'No Validator'), (None, 'Section Data', 'Title', None, True, 'No Validator'), ('Actual.Length_zz', 'Actual Length (z-z), mm', 'TextBox', None, True, 'Int Validator'), ('Actual.Length_yy', 'Actual Length (y-y), mm', 'TextBox', None, True, 'Int Validator'), (None, 'End Condition', 'Title', None, True, 'No Validator'), ('End_1', 'End 1', 'ComboBox', ['Fixed', 'Free', 'Hinged', 'Roller'], True, 'No Validator'), ('End_2', 'End 2', 'ComboBox', ['Fixed', 'Free', 'Hinged', 'Roller'], True, 'No Validator'), ('Image', None, 'Image_compression', str(files("osdag.data.ResourceFiles.images").joinpath("6.RRRR.PNG")), True, 'No Validator'), (None, 'Factored Loads', 'Title', None, True, 'No Validator'), ('Load.Axial', 'Axial Force (kN)', 'TextBox', None, True, 'Int Validator')]
         """
 
-        self.module = KEY_DISP_COMPRESSION_COLUMN
+        self.module = KEY_DISP_COMPRESSION_LACEDCOLUMN
         options_list = []
 
         t1 = (None, KEY_SECTION_PROPERTY, TYPE_TITLE, None, True, 'No Validator')
         options_list.append(t1)
 
-        t1 = (KEY_MODULE, KEY_DISP_COMPRESSION_COLUMN, TYPE_MODULE, None, True, 'No Validator')
+        t1 = (KEY_MODULE, KEY_DISP_COMPRESSION_LACEDCOLUMN, TYPE_MODULE, None, True, 'No Validator')
         options_list.append(t1)
 
         t2 = (KEY_SEC_PROFILE, KEY_DISP_SEC_PROFILE, TYPE_COMBOBOX, VALUES_SEC_PROFILE3, True, 'No Validator')
