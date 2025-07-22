@@ -28,6 +28,56 @@ class LacedColumn(Member):
         # print(f"Here10")
         super(LacedColumn, self).__init__()
 
+        # -----------------------------------------
+        # Input Properties & Design Preferences
+        # -----------------------------------------
+        self.module = ""
+        self.mainmodule = ""
+        self.sec_profile = ""
+        self.sec_list = []
+        self.material = ""
+        self.length_zz = 0.0
+        self.length_yy = 0.0
+        self.end_1_z = ""
+        self.end_2_z = ""
+        self.end_1_y = ""
+        self.end_2_y = ""
+        self.load = None  # Will be set by Load() later
+        self.material_property = None # Will be set by Material() later
+        self.allowable_utilization_ratio = 1.0
+        self.effective_area_factor = 1.0
+        
+        # -----------------------------------------
+        # Status Flags
+        # -----------------------------------------
+        self.design_status = False
+        self.design_status_list = []
+        self.flag = False
+
+        # -----------------------------------------
+        # Result Dictionaries and Lists
+        # -----------------------------------------
+        self.failed_design_dict = {}
+        self.input_section_list = []
+        self.input_section_classification = {}
+
+        self.optimum_section_ur_results = {}
+        self.optimum_section_ur = []
+        self.optimum_section_cost_results = {}
+        self.optimum_section_cost = []
+
+        # -----------------------------------------
+        # Final Output Variables
+        # -----------------------------------------
+        self.result_designation = ""
+        self.result_UR = 0.0
+        self.result_section_class = ""
+        self.result_effective_area = 0.0
+        self.result_eff_len_zz = 0.0
+        self.result_eff_len_yy = 0.0
+        self.result_capacity = 0.0
+        self.result_fcd = 0.0
+
     ###############################################
     # Design Preference Functions Start
     ###############################################
