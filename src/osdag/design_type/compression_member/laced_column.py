@@ -653,7 +653,7 @@ class LacedColumn(Member):
         global logger
         red_list = red_list_function()
 
-        if (self.sec_profile == VALUES_SEC_PROFILE[0]):  # Beams and Columns
+        if (self.sec_profile == VALUES_SEC_PROFILE3[0]):  # Columns
             for section in self.sec_list:
                 if section in red_list:
                     logger.warning(" : You are using a section ({}) (in red color) that is not available in latest version of IS 808".format(section))
@@ -755,20 +755,12 @@ class LacedColumn(Member):
             trial_section = section.strip("'")
 
             # fetching the section properties
-            if self.sec_profile == VALUES_SEC_PROFILE[0]:  # Beams and columns
-                try:
-                    result = Beam(designation=trial_section, material_grade=self.material)
-                except:
-                    result = Column(designation=trial_section, material_grade=self.material)
-                self.section_property = result
-            elif self.sec_profile == VALUES_SEC_PROFILE[1]:  # RHS and SHS
-                try:
-                    result = RHS(designation=trial_section, material_grade=self.material)
-                except:
-                    result = SHS(designation=trial_section, material_grade=self.material)
-                self.section_property = result
-            elif self.sec_profile == VALUES_SEC_PROFILE[2]:  # CHS
-                self.section_property = CHS(designation=trial_section, material_grade=self.material)
+            if self.sec_profile == VALUES_SEC_PROFILE3[0]:  # columns
+                self.section_property = Column(designation=trial_section, material_grade=self.material)
+            elif self.sec_profile == VALUES_SEC_PROFILE3[1]:  # Channel
+                self.section_property = Channel(designation=trial_section, material_grade=self.material) 
+            elif self.sec_profile == VALUES_SEC_PROFILE3[2]:  # Back to Back Channel
+                self.section_property = Channel(designation=trial_section, material_grade=self.material)
             else:
                 self.section_property = Column(designation=trial_section, material_grade=self.material)
 
@@ -777,7 +769,7 @@ class LacedColumn(Member):
                                                                     max(self.section_property.flange_thickness, self.section_property.web_thickness))
 
             # section classification
-            if (self.sec_profile == VALUES_SEC_PROFILE[0]):  # Beams and Columns
+            if (self.sec_profile == VALUES_SEC_PROFILE3[0]):  # Columns
 
                 if self.section_property.type == 'Rolled':
                     self.flange_class = IS800_2007.Table2_i((self.section_property.flange_width / 2), self.section_property.flange_thickness,
@@ -940,12 +932,8 @@ class LacedColumn(Member):
             for section in self.input_section_list:  # iterating the design over each section to find the most optimum section
 
                 # fetching the section properties of the selected section
-                if self.sec_profile == VALUES_SEC_PROFILE[0]:  # Beams and columns
-                    try:
-                        result = Beam(designation=section, material_grade=self.material)
-                    except:
-                        result = Column(designation=section, material_grade=self.material)
-                    self.section_property = result
+                if self.sec_profile == VALUES_SEC_PROFILE3[0]:  # Columns
+                    self.section_property = Column(designation=section, material_grade=self.material)
                 elif self.sec_profile == VALUES_SEC_PROFILE[1]:  # RHS and SHS
                     try:
                         result = RHS(designation=section, material_grade=self.material)
@@ -974,7 +962,7 @@ class LacedColumn(Member):
                 self.section_class = self.input_section_classification[section][0]
 
                 if self.section_class == 'Slender':
-                    if (self.sec_profile == VALUES_SEC_PROFILE[0]):  # Beams and Columns
+                    if (self.sec_profile == VALUES_SEC_PROFILE3[0]):  # Columns
                         self.effective_area = (2 * ((31.4 * self.epsilon * self.section_property.flange_thickness) *
                                                     self.section_property.flange_thickness)) + \
                                             (2 * ((21 * self.epsilon * self.section_property.web_thickness) * self.section_property.web_thickness))
@@ -996,7 +984,7 @@ class LacedColumn(Member):
                 # Step 2 - computing the design compressive stress
 
                 # 2.1 - Buckling curve classification and Imperfection factor
-                if (self.sec_profile == VALUES_SEC_PROFILE[0]):  # Beams and Columns
+                if (self.sec_profile == VALUES_SEC_PROFILE3[0]):  # Columns
 
                     if self.section_property.type == 'Rolled':
                         self.buckling_class_zz = IS800_2007.cl_7_1_2_2_buckling_class_of_crosssections(self.section_property.flange_width,
@@ -1104,7 +1092,7 @@ class LacedColumn(Member):
 
                 # 2.7 - Capacity of the section
 
-                self.section_capacity = self.f_cd * self.effective_area  # N
+                self.section_capacity = self.f_cd * (self.effective_area / 2)  # effective area is divided by 2 as the column is laced
 
                 self.list_zz.append(self.section_capacity)
                 self.list_yy.append(self.section_capacity)
@@ -1452,7 +1440,7 @@ class LacedColumn(Member):
     def save_design(self, popup_summary):
 
         if (self.design_status and self.failed_design_dict is None) or (not self.design_status and len(self.failed_design_dict)>0):
-            if self.sec_profile=='Columns' or self.sec_profile=='Beams' or self.sec_profile == VALUES_SEC_PROFILE[0]:
+            if self.sec_profile=='Columns' or self.sec_profile=='Beams' or self.sec_profile == VALUES_SEC_PROFILE3[0]:
                 try:
                     result = Beam(designation=self.result_designation, material_grade=self.material)
                 except:
