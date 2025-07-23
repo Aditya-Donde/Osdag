@@ -1407,7 +1407,37 @@ class LacedColumn(Member):
             self.design_status = False
             return None
         return S
-            
+
+    def design_tie_plate(self):
+        """
+        Designs the tie plate for the current section.
+        Returns:
+            dict: Dictionary with keys 'De', 'D', 'L', 't'
+        """
+        S = self.calculate_spacing()
+        g = 25
+    
+        if self.sec_profile == VALUES_SEC_PROFILE3[0]:  # Column (I-section)
+            # Not typically used for tie plates, but you can define logic if needed
+            return None
+
+        elif self.sec_profile == VALUES_SEC_PROFILE3[1]:  # Channel (Toe to Toe)
+            De = S - 2 * self.section_property.Cy
+            D = De + 2 * g
+            L = S + 2 * g
+            t = (1 / 50) * (S + 2 * g)
+            return {'De': De, 'D': D, 'L': L, 't': t}
+
+        elif self.sec_profile == VALUES_SEC_PROFILE3[2]:  # Back to Back Channel
+            De = S + 2 * self.section_property.Cy
+            # Ensure De >= 2 * bf
+            if De < 2 * self.section_property.flange_width:
+                De = 2 * self.section_property.flange_width
+            D = De + 2 * g
+            L = S + 2 * g
+            t = (1 / 50) * (S + 2 * g)
+            return {'De': De, 'D': D, 'L': L, 't': t}
+
     def common_result(self, list_result, result_type):
         
         self.result_designation = list_result[result_type]['Designation']
