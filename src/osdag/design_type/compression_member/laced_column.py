@@ -78,6 +78,18 @@ class LacedColumn(Member):
         self.result_capacity = 0.0
         self.result_fcd = 0.0
 
+        # -----------------------------------------
+        #spacing between lacing members
+        # -----------------------------------------
+        self.spacing = 0.0
+        # -----------------------------------------
+        # Tie Plate Properties
+        # -----------------------------------------
+        self.effective_length_tie = 0.0
+        self.overall_depth = 0.0
+        self.length_of_tie = 0.0
+        self.tie_thick = 0.0
+
     ###############################################
     # Design Preference Functions Start
     ###############################################
@@ -739,10 +751,11 @@ class LacedColumn(Member):
         self.failed_design_dict = {}
         flag = self.section_classification(self)
         print(flag)
-        self.calculate_spacing(self)
         if flag:
             self.design_column(self)
             self.results(self)
+            self.calculate_spacing(self)
+            self.design_tie_plates(self)
         print(f"Here[Column/set_input_values]")
 
     # Simulation starts here
@@ -787,7 +800,7 @@ class LacedColumn(Member):
                             self.section_property.flange_thickness + self.section_property.root_radius)) / self.section_property.web_thickness
                 flange_ratio = self.section_property.flange_width / 2 / self.section_property.flange_thickness
 
-            elif (self.sec_profile == VALUES_SEC_PROFILE[1]):  # RHS and SHS
+            elif (self.sec_profile == VALUES_SEC_PROFILE3[1]):  # Channel
                 self.flange_class = IS800_2007.Table2_iii((self.section_property.depth - (2 * self.section_property.flange_thickness)),
                                                           self.section_property.flange_thickness, self.material_property.fy,
                                                           classification_type='Axial compression')
@@ -796,7 +809,7 @@ class LacedColumn(Member):
                             self.section_property.flange_thickness + self.section_property.root_radius)) / self.section_property.web_thickness
                 flange_ratio = self.section_property.flange_width / 2 / self.section_property.flange_thickness
 
-            elif self.sec_profile == VALUES_SEC_PROFILE[2]:  # CHS
+            elif self.sec_profile == VALUES_SEC_PROFILE3[2]:  # Back to Back Channel
                 self.flange_class = IS800_2007.Table2_x(self.section_property.out_diameter, self.section_property.flange_thickness,
                                                         self.material_property.fy, load_type='axial compression')
                 self.web_class = self.flange_class  #Why?
@@ -1390,53 +1403,59 @@ class LacedColumn(Member):
             return None
 
         if self.sec_profile == VALUES_SEC_PROFILE3[2]:  # Channel (back-to-back)
-            S = 2 * (math.sqrt(root) - self.section_property.Cy)
+            self.spacing = 2 * (math.sqrt(root) - self.section_property.Cy)
         elif self.sec_profile == VALUES_SEC_PROFILE3[1]:  # Channel (toe-to-toe)
-            S = 2 * (math.sqrt(root) + self.section_property.Cy)
-            S = int(math.ceil(S / 10.0)) * 10
+            self.spacing = 2 * (math.sqrt(root) + self.section_property.Cy)
+            self.spacing = int(math.ceil(self.spacing / 10.0)) * 10
         elif self.sec_profile == VALUES_SEC_PROFILE3[0]:  # Column
-            S = 2 * (math.sqrt(root) + (self.section_property.flange_thickness/2))
-            S = int(math.ceil(S / 10.0)) * 10
+            self.spacing = 2 * (math.sqrt(root) + (self.section_property.flange_thickness/2))
+            self.spacing = int(math.ceil(self.spacing / 10.0)) * 10
         else:
             logger.error("Unsupported section profile for spacing calculation.")
             self.design_status = False
             return None
 
-        if S < 0:
+        if self.spacing < 0:
             logger.error("Calculated spacing S is negative. Check your input values.")
             self.design_status = False
             return None
-        return S
+        return self.spacing
 
     def design_tie_plate(self):
         """
         Designs the tie plate for the current section.
         Returns:
-            dict: Dictionary with keys 'De', 'D', 'L', 't'
+            dict: Dictionary with keys effective_length_tie, overall_depth, length_of_tie, tie_thick
         """
-        S = self.calculate_spacing()
-        g = 25
+        gauge = 25    #find gauge from the IS 808:2007 
     
         if self.sec_profile == VALUES_SEC_PROFILE3[0]:  # Column (I-section)
-            # Not typically used for tie plates, but you can define logic if needed
-            return None
+            self.effective_length_tie = self.spacing - 2 * self.section_property.flange_width
+            self.overall_depth = self.effective_length_tie + 2 * gauge
+            self.length_of_tie = self.spacing + 2 * gauge
+            self.tie_thick = (1 / 50) * (self.spacing + 2 * gauge)
+            return {self.effective_length_tie, self.overall_depth, self.length_of_tie, self.tie_thick}
 
         elif self.sec_profile == VALUES_SEC_PROFILE3[1]:  # Channel (Toe to Toe)
-            De = S - 2 * self.section_property.Cy
-            D = De + 2 * g
-            L = S + 2 * g
-            t = (1 / 50) * (S + 2 * g)
-            return {'De': De, 'D': D, 'L': L, 't': t}
+            self.effective_length_tie = self.spacing - 2 * self.section_property.Cy
+            self.overall_depth = self.effective_length_tie + 2 * gauge
+            self.length_of_tie = self.spacing + 2 * gauge
+            self.tie_thick = (1 / 50) * (self.spacing + 2 * gauge)
+            return {self.effective_length_tie, self.overall_depth, self.length_of_tie, self.tie_thick}
 
         elif self.sec_profile == VALUES_SEC_PROFILE3[2]:  # Back to Back Channel
-            De = S + 2 * self.section_property.Cy
-            # Ensure De >= 2 * bf
-            if De < 2 * self.section_property.flange_width:
-                De = 2 * self.section_property.flange_width
-            D = De + 2 * g
-            L = S + 2 * g
-            t = (1 / 50) * (S + 2 * g)
-            return {'De': De, 'D': D, 'L': L, 't': t}
+            self.effective_length_tie = self.spacing + 2 * self.section_property.Cy
+            # Ensure effective length >= 2 * flange width
+            if self.effective_length_tie < 2 * self.section_property.flange_width:
+                self.effective_length_tie = 2 * self.section_property.flange_width
+            self.overall_depth = self.effective_length_tie + 2 * gauge
+            self.length_of_tie = self.spacing + 2 * gauge
+            self.tie_thick = (1 / 50) * (self.spacing + 2 * gauge)
+            return {self.effective_length_tie, self.overall_depth, self.length_of_tie, self.tie_thick}
+        else:
+            logger.error("Error calculating the tie plate for the section profile")
+            self.design_status = False
+            return None
 
     def common_result(self, list_result, result_type):
         
