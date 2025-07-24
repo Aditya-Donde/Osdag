@@ -46,6 +46,7 @@ class LacedColumn(Member):
         self.material_property = None # Will be set by Material() later
         self.allowable_utilization_ratio = 1.0
         self.effective_area_factor = 1.0
+        self.lacing_type = ""  #Single Lacing or Double Lacing
         
         # -----------------------------------------
         # Status Flags
@@ -755,7 +756,8 @@ class LacedColumn(Member):
             self.design_column(self)
             self.results(self)
             self.calculate_spacing(self)
-            self.design_tie_plates(self)
+            self.design_tie_plate(self)
+            #self.design_lacing(self)
         print(f"Here[Column/set_input_values]")
 
     # Simulation starts here
@@ -1419,7 +1421,12 @@ class LacedColumn(Member):
             logger.error("Calculated spacing S is negative. Check your input values.")
             self.design_status = False
             return None
+        #return self.spacing
+    
+        if self.design_status:
+            logger.info(f"Spacing between the members of the compound column is {self.spacing} mm.")
         return self.spacing
+
 
     def design_tie_plate(self):
         """
@@ -1427,36 +1434,122 @@ class LacedColumn(Member):
         Returns:
             dict: Dictionary with keys effective_length_tie, overall_depth, length_of_tie, tie_thick
         """
-        gauge = 25    #find gauge from the IS 808:2007 
+        self.gauge = 25    #find gauge from the IS 808:2007 
     
         if self.sec_profile == VALUES_SEC_PROFILE3[0]:  # Column (I-section)
             self.effective_length_tie = self.spacing - 2 * self.section_property.flange_width
-            self.overall_depth = self.effective_length_tie + 2 * gauge
-            self.length_of_tie = self.spacing + 2 * gauge
-            self.tie_thick = (1 / 50) * (self.spacing + 2 * gauge)
-            return {self.effective_length_tie, self.overall_depth, self.length_of_tie, self.tie_thick}
+            self.overall_depth = self.effective_length_tie + 2 * self.gauge
+            self.length_of_tie = self.spacing + 2 * self.gauge
+            self.tie_thick = (1 / 50) * (self.spacing + 2 * self.gauge)
+            
 
         elif self.sec_profile == VALUES_SEC_PROFILE3[1]:  # Channel (Toe to Toe)
             self.effective_length_tie = self.spacing - 2 * self.section_property.Cy
-            self.overall_depth = self.effective_length_tie + 2 * gauge
-            self.length_of_tie = self.spacing + 2 * gauge
-            self.tie_thick = (1 / 50) * (self.spacing + 2 * gauge)
-            return {self.effective_length_tie, self.overall_depth, self.length_of_tie, self.tie_thick}
+            self.overall_depth = self.effective_length_tie + 2 * self.gauge
+            self.length_of_tie = self.spacing + 2 * self.gauge
+            self.tie_thick = (1 / 50) * (self.spacing + 2 * self.gauge)
+            
 
         elif self.sec_profile == VALUES_SEC_PROFILE3[2]:  # Back to Back Channel
             self.effective_length_tie = self.spacing + 2 * self.section_property.Cy
             # Ensure effective length >= 2 * flange width
             if self.effective_length_tie < 2 * self.section_property.flange_width:
                 self.effective_length_tie = 2 * self.section_property.flange_width
-            self.overall_depth = self.effective_length_tie + 2 * gauge
-            self.length_of_tie = self.spacing + 2 * gauge
-            self.tie_thick = (1 / 50) * (self.spacing + 2 * gauge)
-            return {self.effective_length_tie, self.overall_depth, self.length_of_tie, self.tie_thick}
+            self.overall_depth = self.effective_length_tie + 2 * self.gauge
+            self.length_of_tie = self.spacing + 2 * self.gauge
+            self.tie_thick = (1 / 50) * (self.spacing + 2 * self.gauge)
+
         else:
+            self.design_status = False
             logger.error("Error calculating the tie plate for the section profile")
+            return None
+            
+        logger.info(f"Effective length of tie: {self.effective_length_tie} mm, "
+                f"Overall depth: {self.overall_depth} mm, "
+                f"Length of tie: {self.length_of_tie} mm, "
+                f"Tie thickness: {self.tie_thick} mm.")
+        return {
+        "effective_length_tie": self.effective_length_tie,
+        "overall_depth": self.overall_depth,
+        "length_of_tie": self.length_of_tie,
+        "tie_thick": self.tie_thick
+     }
+    
+    def design_lacing(self):
+        """
+        Designs the lacing for the current section.
+        Returns:
+            dict: Dictionary with keys 
+        """
+        # 1. Initial spacing between lacings (L0i)
+        self.initial_spacing_between_lacings = 2 * (self.spacing + 2 * self.gauge) * (1 / math.tan(math.radians(45)))
+
+        # 2. Number of lacings (NL)
+        numerator = self.length_zz - 2 * self.overall_depth - 4 * 20   # 20 mm is the minimum lacing length as per IS 800:2007
+        self.number_of_lacings = int(round(numerator / self.initial_spacing_between_lacings + 1))
+
+        # 3. Actual spacing between lacings (L0)
+        if self.number_of_lacings > 1:
+            self.actual_spacing_between_lacings = numerator / (self.number_of_lacings - 1)
+        else:
+            self.actual_spacing_between_lacings = numerator  # fallback
+
+        # 4. Lacing angle (theta, in degrees)
+        denominator = 2 * (self.spacing + 2 * self.gauge)
+        cot_theta = self.actual_spacing_between_lacings / denominator
+        self.lacing_angle_deg = math.degrees(math.atan(1 / cot_theta))
+
+        # Check if angle is within limits (40 < theta < 70)   
+        if self.lacing_angle_deg < 40 or self.lacing_angle_deg > 70:
+            logger.error("Lacing angle is out of bounds (40 < theta < 70 degrees). Please check your inputs.")
+            self.design_status = False
+            return None
+        
+        # 5. Slenderness Ratio of Lacings (Cl. 7.6.5.1 of IS 800:2007)
+        self.effective_slenderness_ratio = self.actual_spacing_between_lacings / max(self.effective_sr_zz , self.effective_sr_yy)  # m
+        self.slenderness_ratio_lacing = self.actual_spacing_between_lacings / min (self.section_property.rad_of_gy_z , self.section_property.rad_of_gy_y)  # m
+        self.slenderness_ratio_lacing = min(50, 0.7 * self.effective_slenderness_ratio)  # Cl.
+        if self.slenderness_ratio_lacing >= 145:          # Cl.
+            logger.error("Slenderness ratio of lacing is greater than 145. Check your input values.")
+            self.design_status = False
+            return None
+        
+        # 6. Total transverse shear force (Vt)
+        if self.lacing_type == VAULES_LACING_Pattern[0]:  # Single lacing
+            self.transverse_shear_force = (2.5 / 100) * 1 * self.load.axial_force  # Cl. 7.6.6.1 of IS 800:2007
+            theta_rad = math.radians(self.lacing_angle_deg)
+            self.compressive_force_lacing = (self.transverse_shear_force / 1) * (1 / math.sin(theta_rad)) # Cl.
+        elif self.lacing_type == VAULES_LACING_Pattern[1]:  # Double lacing
+            self.transverse_shear_force = (2.5 / 100) * 2 * self.load.axial_force  # Cl.7.6.6.1 of IS 800:2007
+            theta_rad = math.radians(self.lacing_angle_deg)
+            self.compressive_force_lacing = (self.transverse_shear_force / 2) * (1 / math.sin(theta_rad))  # Cl. 
+        else:
+            logger.error("Invalid lacing type. Please select either 'Single' or 'Double'.")
             self.design_status = False
             return None
 
+        logger.info(f"Initial spacing between lacings: {self.initial_spacing_between_lacings} mm, "
+                    f"Number of lacings: {self.number_of_lacings}, "
+                    f"Actual spacing between lacings: {self.actual_spacing_between_lacings} mm, "
+                    f"Lacing angle: {self.lacing_angle_deg} degrees, "
+                    f"Effective slenderness ratio: {self.effective_slenderness_ratio}, "
+                    f"Slenderness ratio of lacing: {self.slenderness_ratio_lacing}, "
+                    f"Transverse shear force: {self.transverse_shear_force} N, "
+                    f"Compressive force in lacing: {self.compressive_force_lacing} N.")
+
+        return {
+            "initial_spacing_between_lacings": self.initial_spacing_between_lacings,
+            "number_of_lacings": self.number_of_lacings,
+            "actual_spacing_between_lacings": self.actual_spacing_between_lacings,
+            "lacing_angle_deg": self.lacing_angle_deg,
+            "effective_slenderness_ratio": self.effective_slenderness_ratio,
+            "slenderness_ratio_lacing": self.slenderness_ratio_lacing,
+            "transverse_shear_force": self.transverse_shear_force,
+            "compressive_force_lacing": self.compressive_force_lacing
+        }
+
+        
+  
     def common_result(self, list_result, result_type):
         
         self.result_designation = list_result[result_type]['Designation']

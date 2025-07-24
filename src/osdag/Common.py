@@ -359,7 +359,6 @@ DISP_TITLE_CM = 'Connecting Members'
 
 # Compression Members
 KEY_DISP_COMPRESSION_COLUMN = 'Columns with known support conditions'
-KEY_DISP_COMPRESSION_LACEDCOLUMN = 'Laced Column Design'
 KEY_DISP_COMPRESSION_Strut = 'Struts in Trusses'
 KEY_SECTION_PROPERTY = 'Section Property'
 KEY_SECTION_DATA = 'Section Data'
@@ -438,6 +437,11 @@ KEY_DISP_DESIGN_STRENGTH_YY = 'Pd (kN)'
 KEY_DISP_DESIGN_STRENGTH_ZZ = 'Pd (kN)'
 KEY_DESIGN_STRENGTH_YY = 'DesignStrength.y-y'
 KEY_DESIGN_STRENGTH_ZZ = 'DesignStrength.z-z'
+
+##Laced Column Design
+KEY_DISP_COMPRESSION_LACEDCOLUMN = 'Laced Column Design'
+VAULES_LACING_Pattern = ['Single Lacing', 'Double Lacing']
+
 ##Strut Design
 ###################################
 KEY_SHEAR_STRENGTH = 'Shear.Strength'
