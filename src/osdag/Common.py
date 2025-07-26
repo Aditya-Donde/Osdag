@@ -440,7 +440,10 @@ KEY_DESIGN_STRENGTH_ZZ = 'DesignStrength.z-z'
 
 ##Laced Column Design
 KEY_DISP_COMPRESSION_LACEDCOLUMN = 'Laced Column Design'
-VAULES_LACING_Pattern = ['Single Lacing', 'Double Lacing']
+#VALUES_LACING_PATTERN = ['Single Lacing', 'Double Lacing']
+KEY_DISP_LACING_DESIGN = 'Lacing Design'
+KEY_LACING_TYPE = 'Lacing Type'
+KEY_DISP_LACING_TYPE = 'Lacing Type*'
 
 ##Strut Design
 ###################################

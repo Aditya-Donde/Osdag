@@ -401,6 +401,9 @@ class LacedColumn(Member):
         t8 = (KEY_AXIAL, KEY_DISP_AXIAL_STAR, TYPE_TEXTBOX, None, True, 'Int Validator')
         options_list.append(t8)
 
+        t17 = (None, KEY_DISP_LACING_DESIGN, TYPE_TITLE, None, True, 'No Validator')
+        options_list.append(t17)
+
         return options_list
 
     def fn_profile_section(self):
@@ -757,7 +760,7 @@ class LacedColumn(Member):
             self.results(self)
             self.calculate_spacing(self)
             self.design_tie_plate(self)
-            #self.design_lacing(self)
+            self.design_lacing(self)
         print(f"Here[Column/set_input_values]")
 
     # Simulation starts here
@@ -1481,8 +1484,13 @@ class LacedColumn(Member):
         Returns:
             dict: Dictionary with keys 
         """
+        self.dia_bolt = 16 # Diameter of bolt in mm
+        VALUES_LACING_PATTERNS = ['Single','Double']  # Single lacing
+        self.lacing_type = VALUES_LACING_PATTERNS[0]  # Default to Single lacing
+
+
         # 1. Initial spacing between lacings (L0i)
-        self.initial_spacing_between_lacings = 2 * (self.spacing + 2 * self.gauge) * (1 / math.tan(math.radians(45)))
+        self.initial_spacing_between_lacings = round(2 * (self.spacing + 2 * self.gauge) * (1 / math.tan(math.radians(45))), 2) # mm
 
         # 2. Number of lacings (NL)
         numerator = self.length_zz - 2 * self.overall_depth - 4 * 20   # 20 mm is the minimum lacing length as per IS 800:2007
@@ -1490,14 +1498,14 @@ class LacedColumn(Member):
 
         # 3. Actual spacing between lacings (L0)
         if self.number_of_lacings > 1:
-            self.actual_spacing_between_lacings = numerator / (self.number_of_lacings - 1)
+            self.actual_spacing_between_lacings = round(numerator / (self.number_of_lacings - 1), 2)  # mm
         else:
             self.actual_spacing_between_lacings = numerator  # fallback
 
         # 4. Lacing angle (theta, in degrees)
         denominator = 2 * (self.spacing + 2 * self.gauge)
         cot_theta = self.actual_spacing_between_lacings / denominator
-        self.lacing_angle_deg = math.degrees(math.atan(1 / cot_theta))
+        self.lacing_angle_deg = round(math.degrees(math.atan(1 / cot_theta)), 2)  # degrees
 
         # Check if angle is within limits (40 < theta < 70)   
         if self.lacing_angle_deg < 40 or self.lacing_angle_deg > 70:
@@ -1506,7 +1514,7 @@ class LacedColumn(Member):
             return None
         
         # 5. Slenderness Ratio of Lacings (Cl. 7.6.5.1 of IS 800:2007)
-        self.effective_slenderness_ratio = self.actual_spacing_between_lacings / max(self.effective_sr_zz , self.effective_sr_yy)  # m
+        self.effective_slenderness_ratio = round(self.actual_spacing_between_lacings / max(self.effective_sr_zz , self.effective_sr_yy), 2)  # m
         self.slenderness_ratio_lacing = self.actual_spacing_between_lacings / min (self.section_property.rad_of_gy_z , self.section_property.rad_of_gy_y)  # m
         self.slenderness_ratio_lacing = min(50, 0.7 * self.effective_slenderness_ratio)  # Cl.
         if self.slenderness_ratio_lacing >= 145:          # Cl.
@@ -1515,18 +1523,31 @@ class LacedColumn(Member):
             return None
         
         # 6. Total transverse shear force (Vt)
-        if self.lacing_type == VAULES_LACING_Pattern[0]:  # Single lacing
-            self.transverse_shear_force = (2.5 / 100) * 1 * self.load.axial_force  # Cl. 7.6.6.1 of IS 800:2007
+        if self.lacing_type == VALUES_LACING_PATTERNS[0]:  # Single lacing
+            self.transverse_shear_force = round(((2.5 / 100) * 1 * self.load.axial_force) / 1000, 2)  # Cl. 7.6.6.1 of IS 800:2007
             theta_rad = math.radians(self.lacing_angle_deg)
-            self.compressive_force_lacing = (self.transverse_shear_force / 1) * (1 / math.sin(theta_rad)) # Cl.
-        elif self.lacing_type == VAULES_LACING_Pattern[1]:  # Double lacing
-            self.transverse_shear_force = (2.5 / 100) * 2 * self.load.axial_force  # Cl.7.6.6.1 of IS 800:2007
+            self.compressive_force_lacing = round((self.transverse_shear_force / 1) * (1 / math.sin(theta_rad)), 2) # Cl.
+        elif self.lacing_type == VALUES_LACING_PATTERNS[1]:  # Double lacing
+            self.transverse_shear_force = round(((2.5 / 100) * 2 * self.load.axial_force) / 1000, 2)  # Cl.7.6.6.1 of IS 800:2007
             theta_rad = math.radians(self.lacing_angle_deg)
-            self.compressive_force_lacing = (self.transverse_shear_force / 2) * (1 / math.sin(theta_rad))  # Cl. 
+            self.compressive_force_lacing = round((self.transverse_shear_force / 2) * (1 / math.sin(theta_rad)), 2)  # Cl. 
         else:
             logger.error("Invalid lacing type. Please select either 'Single' or 'Double'.")
             self.design_status = False
             return None
+
+        # 7. width of lacing
+        self.minimum_lacing_width = 3 * self.dia_bolt #Cl. 7.6.2 of IS:800:2007 
+        self.minimum_lacing_width = int(math.ceil(self.minimum_lacing_width / 25.0)) * 25  # Round up to the next multiple of 25
+
+        # 8. Calculation of radius of gyration of lacing
+        self.effective_length_lacing = self.spacing + 2 * self.gauge * (1 / math.tan(math.radians(45)))
+        if self.lacing_type == VALUES_LACING_PATTERNS[0]:  # Single lacing
+            self.thick_lacing = (1 / 40) * self.effective_length_lacing
+        elif self.lacing_type == VALUES_LACING_PATTERNS[1]:  # Double lacing
+            self.thick_lacing = (1 / 60) * self.effective_length_lacing
+        
+        self.min_r_gyration_lacing = self.thick_lacing / math.sqrt(12)  # Cl.
 
         logger.info(f"Initial spacing between lacings: {self.initial_spacing_between_lacings} mm, "
                     f"Number of lacings: {self.number_of_lacings}, "
@@ -1534,8 +1555,8 @@ class LacedColumn(Member):
                     f"Lacing angle: {self.lacing_angle_deg} degrees, "
                     f"Effective slenderness ratio: {self.effective_slenderness_ratio}, "
                     f"Slenderness ratio of lacing: {self.slenderness_ratio_lacing}, "
-                    f"Transverse shear force: {self.transverse_shear_force} N, "
-                    f"Compressive force in lacing: {self.compressive_force_lacing} N.")
+                    f"Transverse shear force: {self.transverse_shear_force} KN, "
+                    f"Compressive force in lacing: {self.compressive_force_lacing} KN.")
 
         return {
             "initial_spacing_between_lacings": self.initial_spacing_between_lacings,
