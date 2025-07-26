@@ -353,7 +353,7 @@ class LacedColumn(Member):
         t1 = (KEY_MODULE, KEY_DISP_COMPRESSION_LACEDCOLUMN, TYPE_MODULE, None, True, 'No Validator')
         options_list.append(t1)
 
-        t2 = (KEY_SEC_PROFILE, KEY_DISP_SEC_PROFILE, TYPE_COMBOBOX, VALUES_SEC_PROFILE3, True, 'No Validator')
+        t2 = (KEY_SEC_PROFILE, KEY_DISP_SEC_PROFILE, TYPE_COMBOBOX, VALUES_SEC_PROFILE4, True, 'No Validator')
         options_list.append(t2)
 
         t4 = (KEY_SECSIZE, KEY_DISP_SECSIZE, TYPE_COMBOBOX_CUSTOMIZED, ['All','Customized'], True, 'No Validator')
@@ -669,7 +669,7 @@ class LacedColumn(Member):
         global logger
         red_list = red_list_function()
 
-        if (self.sec_profile == VALUES_SEC_PROFILE3[0]):  # Columns
+        if (self.sec_profile == VALUES_SEC_PROFILE4[0]):  # I section
             for section in self.sec_list:
                 if section in red_list:
                     logger.warning(" : You are using a section ({}) (in red color) that is not available in latest version of IS 808".format(section))
@@ -775,11 +775,11 @@ class LacedColumn(Member):
             trial_section = section.strip("'")
 
             # fetching the section properties
-            if self.sec_profile == VALUES_SEC_PROFILE3[0]:  # columns
+            if self.sec_profile == VALUES_SEC_PROFILE4[0]:  # I section
                 self.section_property = Column(designation=trial_section, material_grade=self.material)
-            elif self.sec_profile == VALUES_SEC_PROFILE3[1]:  # Channel
+            elif self.sec_profile == VALUES_SEC_PROFILE4[1]:  # Toe to Toe Channel
                 self.section_property = Channel(designation=trial_section, material_grade=self.material) 
-            elif self.sec_profile == VALUES_SEC_PROFILE3[2]:  # Back to Back Channel
+            elif self.sec_profile == VALUES_SEC_PROFILE4[2]:  # Back to Back Channel
                 self.section_property = Channel(designation=trial_section, material_grade=self.material)
             else:
                 self.section_property = Column(designation=trial_section, material_grade=self.material)
@@ -789,7 +789,7 @@ class LacedColumn(Member):
                                                                     max(self.section_property.flange_thickness, self.section_property.web_thickness))
 
             # section classification
-            if (self.sec_profile == VALUES_SEC_PROFILE3[0]):  # Columns
+            if (self.sec_profile == VALUES_SEC_PROFILE4[0]):  # I section
 
                 if self.section_property.type == 'Rolled':
                     self.flange_class = IS800_2007.Table2_i((self.section_property.flange_width / 2), self.section_property.flange_thickness,
@@ -806,7 +806,7 @@ class LacedColumn(Member):
                             self.section_property.flange_thickness + self.section_property.root_radius)) / self.section_property.web_thickness
                 flange_ratio = self.section_property.flange_width / 2 / self.section_property.flange_thickness
 
-            elif (self.sec_profile == VALUES_SEC_PROFILE3[1]):  # Channel
+            elif (self.sec_profile == VALUES_SEC_PROFILE4[1]):  # Toe to Toe Channel
                 self.flange_class = IS800_2007.Table2_iii((self.section_property.depth - (2 * self.section_property.flange_thickness)),
                                                           self.section_property.flange_thickness, self.material_property.fy,
                                                           classification_type='Axial compression')
@@ -815,7 +815,7 @@ class LacedColumn(Member):
                             self.section_property.flange_thickness + self.section_property.root_radius)) / self.section_property.web_thickness
                 flange_ratio = self.section_property.flange_width / 2 / self.section_property.flange_thickness
 
-            elif self.sec_profile == VALUES_SEC_PROFILE3[2]:  # Back to Back Channel
+            elif self.sec_profile == VALUES_SEC_PROFILE4[2]:  # Back to Back Channel
                 self.flange_class = IS800_2007.Table2_x(self.section_property.out_diameter, self.section_property.flange_thickness,
                                                         self.material_property.fy, load_type='axial compression')
                 self.web_class = self.flange_class  #Why?
@@ -952,16 +952,16 @@ class LacedColumn(Member):
             for section in self.input_section_list:  # iterating the design over each section to find the most optimum section
 
                 # fetching the section properties of the selected section
-                if self.sec_profile == VALUES_SEC_PROFILE3[0]:  # Columns
+                if self.sec_profile == VALUES_SEC_PROFILE4[0]:  # I section
                     self.section_property = Column(designation=section, material_grade=self.material)
-                elif self.sec_profile == VALUES_SEC_PROFILE[1]:  # RHS and SHS
+                elif self.sec_profile == VALUES_SEC_PROFILE4[1]:  # Toe to Toe Channel
                     try:
                         result = RHS(designation=section, material_grade=self.material)
                     except:
                         result = SHS(designation=section, material_grade=self.material)
                     self.section_property = result
 
-                elif self.sec_profile == VALUES_SEC_PROFILE[2]:  # CHS
+                elif self.sec_profile == VALUES_SEC_PROFILE4[2]:  # Back to Back Channel
                     self.section_property = CHS(designation=section, material_grade=self.material)
                 else:   #Why?
                     self.section_property = Column(designation=section, material_grade=self.material)
@@ -982,11 +982,11 @@ class LacedColumn(Member):
                 self.section_class = self.input_section_classification[section][0]
 
                 if self.section_class == 'Slender':
-                    if (self.sec_profile == VALUES_SEC_PROFILE3[0]):  # Columns
+                    if (self.sec_profile == VALUES_SEC_PROFILE4[0]):  # I section
                         self.effective_area = (2 * ((31.4 * self.epsilon * self.section_property.flange_thickness) *
                                                     self.section_property.flange_thickness)) + \
                                             (2 * ((21 * self.epsilon * self.section_property.web_thickness) * self.section_property.web_thickness))
-                    elif (self.sec_profile == VALUES_SEC_PROFILE[1]):
+                    elif (self.sec_profile == VALUES_SEC_PROFILE4[1]):
                         self.effective_area = (2 * 21 * self.epsilon * self.section_property.flange_thickness) * 2
                 else:
                     self.effective_area = self.section_property.area  # mm2
@@ -1004,7 +1004,7 @@ class LacedColumn(Member):
                 # Step 2 - computing the design compressive stress
 
                 # 2.1 - Buckling curve classification and Imperfection factor
-                if (self.sec_profile == VALUES_SEC_PROFILE3[0]):  # Columns
+                if (self.sec_profile == VALUES_SEC_PROFILE4[0]):  # I section
 
                     if self.section_property.type == 'Rolled':
                         self.buckling_class_zz = IS800_2007.cl_7_1_2_2_buckling_class_of_crosssections(self.section_property.flange_width,
@@ -1408,12 +1408,12 @@ class LacedColumn(Member):
             logger.error("Invalid input: (I_zz - I_yy) / A is negative.")
             return None
 
-        if self.sec_profile == VALUES_SEC_PROFILE3[2]:  # Channel (back-to-back)
+        if self.sec_profile == VALUES_SEC_PROFILE4[2]:  # Channel (back-to-back)
             self.spacing = 2 * (math.sqrt(root) - self.section_property.Cy)
-        elif self.sec_profile == VALUES_SEC_PROFILE3[1]:  # Channel (toe-to-toe)
+        elif self.sec_profile == VALUES_SEC_PROFILE4[1]:  # Channel (toe-to-toe)
             self.spacing = 2 * (math.sqrt(root) + self.section_property.Cy)
             self.spacing = int(math.ceil(self.spacing / 10.0)) * 10
-        elif self.sec_profile == VALUES_SEC_PROFILE3[0]:  # Column
+        elif self.sec_profile == VALUES_SEC_PROFILE4[0]:  # I section
             self.spacing = 2 * (math.sqrt(root) + (self.section_property.flange_thickness/2))
             self.spacing = int(math.ceil(self.spacing / 10.0)) * 10
         else:
@@ -1440,21 +1440,21 @@ class LacedColumn(Member):
         """
         self.gauge = 25    #find gauge from the IS 808:2007 
     
-        if self.sec_profile == VALUES_SEC_PROFILE3[0]:  # Column (I-section)
+        if self.sec_profile == VALUES_SEC_PROFILE4[0]:  # Column (I-section)
             self.effective_length_tie = self.spacing - 2 * self.section_property.flange_width
             self.overall_depth = self.effective_length_tie + 2 * self.gauge
             self.length_of_tie = self.spacing + 2 * self.gauge
             self.tie_thick = (1 / 50) * (self.spacing + 2 * self.gauge)
             
 
-        elif self.sec_profile == VALUES_SEC_PROFILE3[1]:  # Channel (Toe to Toe)
+        elif self.sec_profile == VALUES_SEC_PROFILE4[1]:  # Channel (Toe to Toe)
             self.effective_length_tie = self.spacing - 2 * self.section_property.Cy
             self.overall_depth = self.effective_length_tie + 2 * self.gauge
             self.length_of_tie = self.spacing + 2 * self.gauge
             self.tie_thick = (1 / 50) * (self.spacing + 2 * self.gauge)
             
 
-        elif self.sec_profile == VALUES_SEC_PROFILE3[2]:  # Back to Back Channel
+        elif self.sec_profile == VALUES_SEC_PROFILE4[2]:  # Back to Back Channel
             self.effective_length_tie = self.spacing + 2 * self.section_property.Cy
             # Ensure effective length >= 2 * flange width
             if self.effective_length_tie < 2 * self.section_property.flange_width:
@@ -1570,7 +1570,7 @@ class LacedColumn(Member):
         # 5. Design compressive stress in lacing
         self.design_compressive_stress_lacing = self.chi_lacing * self.material_property.fy / self.gamma_m0
 
-        if self.design_compressive_stress_lacing <= self.material_property.fy / self.gamma_m0:
+        if self.design_compressive_stress_lacing >= self.material_property.fy / self.gamma_m0:
             logger.error("Design compressive stress in lacing is less than required compressive stress. Check your input values.")
             self.design_status = False
             return None
@@ -1702,7 +1702,7 @@ class LacedColumn(Member):
     def save_design(self, popup_summary):
 
         if (self.design_status and self.failed_design_dict is None) or (not self.design_status and len(self.failed_design_dict)>0):
-            if self.sec_profile=='Columns' or self.sec_profile=='Beams' or self.sec_profile == VALUES_SEC_PROFILE3[0]:
+            if self.sec_profile=='Columns' or self.sec_profile=='Beams' or self.sec_profile == VALUES_SEC_PROFILE4[0]:
                 try:
                     result = Beam(designation=self.result_designation, material_grade=self.material)
                 except:
