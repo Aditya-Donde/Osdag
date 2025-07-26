@@ -437,6 +437,14 @@ KEY_DISP_DESIGN_STRENGTH_YY = 'Pd (kN)'
 KEY_DISP_DESIGN_STRENGTH_ZZ = 'Pd (kN)'
 KEY_DESIGN_STRENGTH_YY = 'DesignStrength.y-y'
 KEY_DESIGN_STRENGTH_ZZ = 'DesignStrength.z-z'
+
+##Laced Column Design
+KEY_DISP_COMPRESSION_LACEDCOLUMN = 'Laced Column Design'
+#VALUES_LACING_PATTERN = ['Single Lacing', 'Double Lacing']
+KEY_DISP_LACING_DESIGN = 'Lacing Design'
+KEY_LACING_TYPE = 'Lacing Type'
+KEY_DISP_LACING_TYPE = 'Lacing Type*'
+
 ##Strut Design
 ###################################
 KEY_SHEAR_STRENGTH = 'Shear.Strength'
@@ -2225,6 +2233,7 @@ VALUES_SEC_PROFILE = ['Beams and Columns', 'RHS and SHS', 'CHS'] #,'Channels', '
 VALUES_SEC_PROFILE_2 = ['Angles', 'Back to Back Angles', 'Star Angles', 'Channels', 'Back to Back Channels']
 #, 'Channels', 'Back to Back Channels'
 VALUES_SEC_PROFILE3 = ['Beams and Columns'] #,'Channels', 'Back to Back Channels'
+VALUES_SEC_PROFILE4 = ['I Section', 'Toe to Toe Channel', 'Back to Back Channel']
 KEY_LENZZ = 'Member.Length_zz'
 KEY_DISP_LENZZ = 'Length (z-z)(mm)*'
 
