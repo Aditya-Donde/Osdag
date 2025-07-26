@@ -409,7 +409,7 @@ class LacedColumn(Member):
     def fn_profile_section(self):
 
         profile = self[0]
-        if profile == 'Columns':
+        if profile == VALUES_SEC_PROFILE4[0]: 
             return connectdb("Columns", call_type="popup")
         elif profile == 'RHS and SHS':
             res1 = connectdb("RHS", call_type="popup")
@@ -419,7 +419,7 @@ class LacedColumn(Member):
             return connectdb("CHS", call_type="popup")
         elif profile in ['Angles', 'Back to Back Angles', 'Star Angles']:
             return connectdb('Angles', call_type= "popup")
-        elif profile in ['Channels', 'Back to Back Channels']:
+        elif profile in ['Toe to Toe Channel', 'Back to Back Channels']:
             return connectdb("Channels", call_type= "popup")
  
     def fn_end1_end2(self):
