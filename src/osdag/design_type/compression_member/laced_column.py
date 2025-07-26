@@ -746,6 +746,7 @@ class LacedColumn(Member):
         # safety factors
         self.gamma_m0 = IS800_2007.cl_5_4_1_Table_5["gamma_m0"]["yielding"]
         # print(f"Here[Column/set_input_values/self.gamma_m0{self.gamma_m0}]")
+        self.imperfection_factor_lacing = IS800_2007.cl_7_1_2_1_imperfection_factor(buckling_class='b') # 0.34 for single flats
         # material property
         self.material_property = Material(material_grade=self.material, thickness=0)
 
@@ -1484,9 +1485,12 @@ class LacedColumn(Member):
         Returns:
             dict: Dictionary with keys 
         """
+        #this part is only for calculation testing, remove later while developing UI
         self.dia_bolt = 16 # Diameter of bolt in mm
-        VALUES_LACING_PATTERNS = ['Single','Double']  # Single lacing
-        self.lacing_type = VALUES_LACING_PATTERNS[0]  # Default to Single lacing
+        VALUES_LACING_PATTERN = ['Single','Double']  # Single lacing
+        VALUES_LACING_CONNECTION = ['Bolted', 'Welded']  # Bolted connection
+        self.lacing_type = VALUES_LACING_PATTERN[0]  # Default to Single lacing
+        self.connection_type = VALUES_LACING_CONNECTION[0]  # Default to Bolted connection
 
 
         # 1. Initial spacing between lacings (L0i)
@@ -1513,21 +1517,12 @@ class LacedColumn(Member):
             self.design_status = False
             return None
         
-        # 5. Slenderness Ratio of Lacings (Cl. 7.6.5.1 of IS 800:2007)
-        self.effective_slenderness_ratio = round(self.actual_spacing_between_lacings / max(self.effective_sr_zz , self.effective_sr_yy), 2)  # m
-        self.slenderness_ratio_lacing = self.actual_spacing_between_lacings / min (self.section_property.rad_of_gy_z , self.section_property.rad_of_gy_y)  # m
-        self.slenderness_ratio_lacing = min(50, 0.7 * self.effective_slenderness_ratio)  # Cl.
-        if self.slenderness_ratio_lacing >= 145:          # Cl.
-            logger.error("Slenderness ratio of lacing is greater than 145. Check your input values.")
-            self.design_status = False
-            return None
-        
-        # 6. Total transverse shear force (Vt)
-        if self.lacing_type == VALUES_LACING_PATTERNS[0]:  # Single lacing
+        # 5. Total transverse shear force (Vt)
+        if self.lacing_type == VALUES_LACING_PATTERN[0]:  # Single lacing
             self.transverse_shear_force = round(((2.5 / 100) * 1 * self.load.axial_force) / 1000, 2)  # Cl. 7.6.6.1 of IS 800:2007
             theta_rad = math.radians(self.lacing_angle_deg)
             self.compressive_force_lacing = round((self.transverse_shear_force / 1) * (1 / math.sin(theta_rad)), 2) # Cl.
-        elif self.lacing_type == VALUES_LACING_PATTERNS[1]:  # Double lacing
+        elif self.lacing_type == VALUES_LACING_PATTERN[1]:  # Double lacing
             self.transverse_shear_force = round(((2.5 / 100) * 2 * self.load.axial_force) / 1000, 2)  # Cl.7.6.6.1 of IS 800:2007
             theta_rad = math.radians(self.lacing_angle_deg)
             self.compressive_force_lacing = round((self.transverse_shear_force / 2) * (1 / math.sin(theta_rad)), 2)  # Cl. 
@@ -1536,38 +1531,108 @@ class LacedColumn(Member):
             self.design_status = False
             return None
 
-        # 7. width of lacing
+        # 6. width of lacing
         self.minimum_lacing_width = 3 * self.dia_bolt #Cl. 7.6.2 of IS:800:2007 
         self.minimum_lacing_width = int(math.ceil(self.minimum_lacing_width / 25.0)) * 25  # Round up to the next multiple of 25
 
-        # 8. Calculation of radius of gyration of lacing
+        # 7. Calculation of radius of gyration of lacing
         self.effective_length_lacing = self.spacing + 2 * self.gauge * (1 / math.tan(math.radians(45)))
-        if self.lacing_type == VALUES_LACING_PATTERNS[0]:  # Single lacing
+        if self.connection_type == VALUES_LACING_CONNECTION[0]:   # Bolted
             self.thick_lacing = (1 / 40) * self.effective_length_lacing
-        elif self.lacing_type == VALUES_LACING_PATTERNS[1]:  # Double lacing
+        elif self.connection_type == VALUES_LACING_CONNECTION[1]:  # Welded
             self.thick_lacing = (1 / 60) * self.effective_length_lacing
         
         self.min_r_gyration_lacing = self.thick_lacing / math.sqrt(12)  # Cl.
+
+        # 8. Slenderness Ratio of Lacings (Cl. 7.6.5.1 of IS 800:2007)
+        self.effective_slenderness_ratio = self.effective_length_lacing / self.min_r_gyration_lacing  # m
+        self.max_slenderness_ratio_lacing = self.actual_spacing_between_lacings / self.min_r_gyration_lacing  # m
+        self.max_slenderness_ratio_lacing = min(50, 0.7 * self.effective_slenderness_ratio)  # Cl.
+        if self.max_slenderness_ratio_lacing >= 145:          # Cl.
+            logger.error("Slenderness ratio of lacing is greater than 145. Check your input values.")
+            self.design_status = False
+            return None
+        
+        #Calculation of design strength of lacing
+
+        # 1. Euler buckling stress of lacing
+        self.euler_buckling_stress_lacing = (math.pi ** 2 * self.material_property.modulus_of_elasticity) / self.effective_slenderness_ratio ** 2
+        
+        # 2. Non-dimensional effective slenderness ratio of lacing 
+        self.non_dimensional_effective_slenderness_ratio_lacing = math.sqrt(self.material_property.fy / self.euler_buckling_stress_lacing)
+
+        # 3. phi_lacing
+        self.phi_lacing = 0.5 * (1 + (self.imperfection_factor_lacing * (self.non_dimensional_effective_slenderness_ratio_lacing - 0.2)) + self.non_dimensional_effective_slenderness_ratio_lacing ** 2)
+
+        # 4. Calculation of chi
+        self.chi_lacing = 1 / (self.phi_lacing + (self.phi_lacing ** 2 - self.non_dimensional_effective_slenderness_ratio_lacing ** 2) ** 0.5)
+
+        # 5. Design compressive stress in lacing
+        self.design_compressive_stress_lacing = self.chi_lacing * self.material_property.fy / self.gamma_m0
+
+        if self.design_compressive_stress_lacing <= self.material_property.fy / self.gamma_m0:
+            logger.error("Design compressive stress in lacing is less than required compressive stress. Check your input values.")
+            self.design_status = False
+            return None
+        
+        # 6. Design compressive capacity in lacing
+        self.cross_sectional_area_lacing = self.minimum_lacing_width * self.thick_lacing  #Cross-sectional area for flat lace
+        self.design_compressive_capacity_lacing = self.design_compressive_stress_lacing * self.cross_sectional_area_lacing 
+        if self.design_compressive_capacity_lacing <= self.compressive_force_lacing:
+            logger.error("Design compressive capacity in lacing is less than required compressive force. Check your input values.")
+            self.design_status = False
+            return None
+        
+        # 7. Design tensile strength governed by yielding of gross section Tdg
+        self.design_tensile_strength_lacing = self.material_property.fy * self.cross_sectional_area_lacing / self.gamma_m0
+        if self.design_tensile_strength_lacing <= self.compressive_force_lacing:
+            logger.error("Design tensile strength in lacing is less than required compressive force. Check your input values.")
+            self.design_status = False
+            return None
 
         logger.info(f"Initial spacing between lacings: {self.initial_spacing_between_lacings} mm, "
                     f"Number of lacings: {self.number_of_lacings}, "
                     f"Actual spacing between lacings: {self.actual_spacing_between_lacings} mm, "
                     f"Lacing angle: {self.lacing_angle_deg} degrees, "
                     f"Effective slenderness ratio: {self.effective_slenderness_ratio}, "
-                    f"Slenderness ratio of lacing: {self.slenderness_ratio_lacing}, "
+                    f"lMax slenderness ratio of lacing: {self.max_slenderness_ratio_lacing}, "
                     f"Transverse shear force: {self.transverse_shear_force} KN, "
-                    f"Compressive force in lacing: {self.compressive_force_lacing} KN.")
+                    f"Compressive force in lacing: {self.compressive_force_lacing} KN."
+                    f"Minimum lacing width: {self.minimum_lacing_width} mm, "
+                    f"Effective length of lacing: {self.effective_length_lacing} mm, "
+                    f"Thickness of lacing: {self.thick_lacing} mm, "
+                    f"Minimum radius of gyration of lacing: {self.min_r_gyration_lacing} mm, "
+                    f"Euler buckling stress of lacing: {self.euler_buckling_stress_lacing} MPa, "
+                    f"Non-dimensional effective slenderness ratio of lacing: {self.non_dimensional_effective_slenderness_ratio_lacing}, "
+                    f"phi_lacing: {self.phi_lacing}, "
+                    f"Chi_lacing: {self.chi_lacing}, "
+                    f"Design compressive stress in lacing: {self.design_compressive_stress_lacing} MPa, "
+                    f"Design compressive capacity in lacing: {self.design_compressive_capacity_lacing} KN, "
+                    f"Design tensile strength in lacing: {self.design_tensile_strength_lacing} KN.")
+        
+        result_lacing = [
+        self.initial_spacing_between_lacings,
+        self.number_of_lacings,
+        self.actual_spacing_between_lacings,
+        self.lacing_angle_deg,
+        self.effective_slenderness_ratio,
+        self.max_slenderness_ratio_lacing,
+        self.transverse_shear_force,
+        self.compressive_force_lacing,
+        self.minimum_lacing_width,
+        self.effective_length_lacing,
+        self.thick_lacing,
+        self.min_r_gyration_lacing,
+        self.euler_buckling_stress_lacing,
+        self.non_dimensional_effective_slenderness_ratio_lacing,
+        self.phi_lacing,
+        self.chi_lacing,
+        self.design_compressive_stress_lacing,
+        self.design_compressive_capacity_lacing,
+        self.design_tensile_strength_lacing
+        ]
 
-        return {
-            "initial_spacing_between_lacings": self.initial_spacing_between_lacings,
-            "number_of_lacings": self.number_of_lacings,
-            "actual_spacing_between_lacings": self.actual_spacing_between_lacings,
-            "lacing_angle_deg": self.lacing_angle_deg,
-            "effective_slenderness_ratio": self.effective_slenderness_ratio,
-            "slenderness_ratio_lacing": self.slenderness_ratio_lacing,
-            "transverse_shear_force": self.transverse_shear_force,
-            "compressive_force_lacing": self.compressive_force_lacing
-        }
+        return result_lacing
 
         
   
