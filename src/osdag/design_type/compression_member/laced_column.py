@@ -419,7 +419,7 @@ class LacedColumn(Member):
             return connectdb("CHS", call_type="popup")
         elif profile in ['Angles', 'Back to Back Angles', 'Star Angles']:
             return connectdb('Angles', call_type= "popup")
-        elif profile in ['Toe to Toe Channel', 'Back to Back Channels']:
+        elif profile in ['Toe to Toe Channel', 'Back to Back Channel']:
             return connectdb("Channels", call_type= "popup")
  
     def fn_end1_end2(self):
@@ -807,22 +807,26 @@ class LacedColumn(Member):
                 flange_ratio = self.section_property.flange_width / 2 / self.section_property.flange_thickness
 
             elif (self.sec_profile == VALUES_SEC_PROFILE4[1]):  # Toe to Toe Channel
-                self.flange_class = IS800_2007.Table2_iii((self.section_property.depth - (2 * self.section_property.flange_thickness)),
-                                                          self.section_property.flange_thickness, self.material_property.fy,
-                                                          classification_type='Axial compression')
-                self.web_class = self.flange_class
+                self.flange_class = IS800_2007.Table2_i((self.section_property.flange_width / 2), self.section_property.flange_thickness,
+                                                            self.material_property.fy, self.section_property.type)[0]
+                # Web classification using Table2_iv
+                self.web_class = IS800_2007.Table2_iv(self.section_property.depth - 2 * self.section_property.flange_thickness,
+                                                      self.section_property.web_thickness,
+                                                      self.material_property.fy)[0]
                 web_ratio = (self.section_property.depth - 2 * (
                             self.section_property.flange_thickness + self.section_property.root_radius)) / self.section_property.web_thickness
                 flange_ratio = self.section_property.flange_width / 2 / self.section_property.flange_thickness
 
-            elif self.sec_profile == VALUES_SEC_PROFILE4[2]:  # Back to Back Channel
-                self.flange_class = IS800_2007.Table2_x(self.section_property.out_diameter, self.section_property.flange_thickness,
-                                                        self.material_property.fy, load_type='axial compression')
-                self.web_class = self.flange_class  #Why?
+            elif (self.sec_profile == VALUES_SEC_PROFILE4[2]):  # Back to Back Channel
+                self.flange_class = IS800_2007.Table2_i((self.section_property.flange_width / 2), self.section_property.flange_thickness,
+                                                            self.material_property.fy, self.section_property.type)[0]
+                # Web classification using Table2_iv
+                self.web_class = IS800_2007.Table2_iv(self.section_property.depth - 2 * self.section_property.flange_thickness,
+                                                      self.section_property.web_thickness,
+                                                      self.material_property.fy)[0]
                 web_ratio = (self.section_property.depth - 2 * (
                             self.section_property.flange_thickness + self.section_property.root_radius)) / self.section_property.web_thickness
                 flange_ratio = self.section_property.flange_width / 2 / self.section_property.flange_thickness
-                # print(f"self.web_class{self.web_class}")
             
             if self.flange_class == 'Slender' or self.web_class == 'Slender':
                 self.section_class = 'Slender'
@@ -955,14 +959,10 @@ class LacedColumn(Member):
                 if self.sec_profile == VALUES_SEC_PROFILE4[0]:  # I section
                     self.section_property = Column(designation=section, material_grade=self.material)
                 elif self.sec_profile == VALUES_SEC_PROFILE4[1]:  # Toe to Toe Channel
-                    try:
-                        result = RHS(designation=section, material_grade=self.material)
-                    except:
-                        result = SHS(designation=section, material_grade=self.material)
-                    self.section_property = result
+                    self.section_property = Channel(designation=section, material_grade=self.material)
 
                 elif self.sec_profile == VALUES_SEC_PROFILE4[2]:  # Back to Back Channel
-                    self.section_property = CHS(designation=section, material_grade=self.material)
+                    self.section_property = Channel(designation=section, material_grade=self.material)
                 else:   #Why?
                     self.section_property = Column(designation=section, material_grade=self.material)
 
@@ -994,6 +994,9 @@ class LacedColumn(Member):
 
                 if self.effective_area_factor < 1.0:
                     self.effective_area = round(self.effective_area * self.effective_area_factor, 2)
+
+                # Always use half the effective area for laced columns
+                self.effective_area = self.effective_area / 2
 
                 self.list_zz.append(self.section_class)
                 self.list_yy.append(self.section_class)
@@ -1028,9 +1031,39 @@ class LacedColumn(Member):
                                                                                                     self.section_property.flange_thickness,
                                                                                                     cross_section='Welded I-section',
                                                                                                     section_type='Hot rolled')['y-y']
+                
+                
+                #elif (self.sec_profile == VALUES_SEC_PROFILE4[1]):  # Toe to Toe Channel
+                    '''
+                    self.buckling_class_zz = IS800_2007.cl_7_1_2_2_buckling_class_of_crosssections(self.section_property.flange_width,
+                                                                                                    self.section_property.depth,
+                                                                                                    self.section_property.flange_thickness,
+                                                                                                    cross_section='Toe to Toe Channel',
+                                                                                                    section_type='Hot rolled')['z-z']
+                    self.buckling_class_yy = IS800_2007.cl_7_1_2_2_buckling_class_of_crosssections(self.section_property.flange_width,
+                                                                                                    self.section_property.depth,
+                                                                                                    self.section_property.flange_thickness,
+                                                                                                    cross_section='Toe to Toe Channel',
+                                                                                                    section_type='Hot rolled')['y-y']
+                    '''
+                #elif (self.sec_profile == VALUES_SEC_PROFILE4[2]):  # Back to Back Channel
+                    '''
+                    self.buckling_class_zz = IS800_2007.cl_7_1_2_2_buckling_class_of_crosssections(self.section_property.flange_width,
+                                                                                                    self.section_property.depth,
+                                                                                                    self.section_property.flange_thickness,
+                                                                                                    cross_section='Toe to Toe Channel',
+                                                                                                    section_type='Hot rolled')['z-z']
+                    self.buckling_class_yy = IS800_2007.cl_7_1_2_2_buckling_class_of_crosssections(self.section_property.flange_width,
+                                                                                                    self.section_property.depth,
+                                                                                                    self.section_property.flange_thickness,
+                                                                                                    cross_section='Toe to Toe Channel',
+                                                                                                    section_type='Hot rolled')['y-y']
+                    '''
+                    
                 else:
                     self.buckling_class_zz = 'a'
-                    self.buckling_class_yy = 'a'
+                    self.buckling_class_yy = 'a' 
+                
 
                 self.imperfection_factor_zz = IS800_2007.cl_7_1_2_1_imperfection_factor(buckling_class=self.buckling_class_zz)
                 self.imperfection_factor_yy = IS800_2007.cl_7_1_2_1_imperfection_factor(buckling_class=self.buckling_class_yy)
@@ -1112,7 +1145,7 @@ class LacedColumn(Member):
 
                 # 2.7 - Capacity of the section
 
-                self.section_capacity = self.f_cd * (self.effective_area / 2)  # effective area is divided by 2 as the column is laced
+                self.section_capacity = self.f_cd * self.effective_area
 
                 self.list_zz.append(self.section_capacity)
                 self.list_yy.append(self.section_capacity)
